@@ -26,9 +26,13 @@ class BaseDatasetTransform:
         id_columns = [col for col in cols if 'id' in col.lower()]
 
         if id_columns:
-            print(f'\nУдаление колонок с именем "id": {id_columns}')
-            X = X.drop(columns=id_columns)
-            print('-------------------------------------------')
+            print(f'\nОбнаружены колонки с именем "id": {id_columns}')
+        
+            for col in id_columns:
+                response = input(f'Хотите удалить колонку "{col}"? (y/n): ').strip().lower()
+                if response == 'y':
+                    X = X.drop(columns=[col])
+                    print(f'Колонка "{col}" удалена.')
 
         return X
 

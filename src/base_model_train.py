@@ -31,14 +31,12 @@ class BaseModelTrain(BaseEstimator, TransformerMixin):
         
         X_transformed = X.drop(columns=self.columns_to_delete, errors='ignore')
         
-        # Преобразуем категориальные признаки в категорию заранее
         for cat_feature in self.categorical_features:
             if cat_feature in X_transformed.columns:
                 X_transformed[cat_feature] = X_transformed[cat_feature].astype('category')
         
-        # Для MultiOutputClassifier убираем передачу categorical_feature
         if self.task_type == 'multilabel':
-            self.model.fit(X_transformed, y)  # categorical_feature не используется
+            self.model.fit(X_transformed, y)  
         else:
             self.model.fit(X_transformed, y, categorical_feature=self.categorical_features)
         
