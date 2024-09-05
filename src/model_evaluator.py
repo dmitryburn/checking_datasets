@@ -18,9 +18,10 @@ class ModelEvaluator(BaseEstimator):
 
     def evaluate(self, X_test, y_test):
         is_multioutput = len(y_test.shape) > 1 and y_test.shape[1] > 1
-        multitarget_col_names = y_test.columns
+        
         
         if is_multioutput:
+            multitarget_col_names = y_test.columns
             y_pred = self.model_trainer.predict(X_test).astype(int)
             y_test = np.array(y_test).astype(int)
         else:

@@ -103,9 +103,9 @@ class BaseDatasetTransform:
     def get_train_test_split(self, test_size=0.3, random_state=42):
         print('Количество значений целевой переменной по категориям:')
         
-        # Проверяем, является ли target одиночной переменной или списком
+
         if len(self.target) == 1:
-            # Одиночная целевая переменная
+
             y = self.dataset[self.target[0]]
             X = self.dataset.drop(columns=self.target)
             
@@ -118,12 +118,11 @@ class BaseDatasetTransform:
             )
             
         else:
-            # Мультицелевые переменные
+
             y = self.dataset[self.target]
             X = self.dataset.drop(columns=self.target)
             
-            # Стратификация для мультицелевых переменных
-            # Объединяем значения целевых переменных в строку для стратификации
+
             y_stratify = y.apply(lambda row: '_'.join(row.astype(str)), axis=1)
             
             print('Количество значений комбинаций целевых переменных по категориям:')
