@@ -1,9 +1,14 @@
 from sklearn.impute import SimpleImputer
 from sklearn.model_selection import train_test_split
+from embeddings_tools import get_embeddings
 
 class BaseDatasetTransform:
-    def __init__(self, dataset, target=None, dataset_test=None):
+    def __init__(self, dataset, text_columns=None,target=None, dataset_test=None,multilanguage=None):
         self.dataset = dataset
+        self.text_columns = text_columns
+        self.multilanguage = multilanguage
+
+
         if isinstance(target, str):
             self.target = [target]
         elif isinstance(target, list):
@@ -66,7 +71,7 @@ class BaseDatasetTransform:
 
         return X_train, X_test, categorical_cols.to_list()
 
-    def fit_transform(self,test_size=0.3,stratify=None):
+    def fit_transform(self,test_size=0.3):
         self.dataset = self._remove_id_columns(self.dataset)
         
         if self.target:
@@ -81,11 +86,11 @@ class BaseDatasetTransform:
             else:
                 print(f'\nВ колонке(ах) {self.target} нет пропущенных значений')
 
-
+        self.dataset = get_embeddings(self.dataset,self.text_columns,batch_size=32,multilanguage=self.multilanguage)
         X = self.dataset.drop(columns=self.target)
         y = self.dataset[self.target]
         X_train, X_test, y_train, y_test = train_test_split(
-            X, y, test_size=test_size, random_state=42, stratify=y if stratify else None
+            X, y, test_size=test_size, random_state=42, stratify=y if len(self.target) == 1 else None
         )
         
 
