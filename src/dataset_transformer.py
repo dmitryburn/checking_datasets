@@ -85,8 +85,10 @@ class BaseDatasetTransform:
                     self.dataset = self.dataset.dropna(subset=[column])
             else:
                 print(f'\nВ колонке(ах) {self.target} нет пропущенных значений')
+                
+        if self.text_columns: 
+            self.dataset = get_embeddings(self.dataset,self.text_columns,batch_size=32,multilanguage=self.multilanguage)
 
-        self.dataset = get_embeddings(self.dataset,self.text_columns,batch_size=32,multilanguage=self.multilanguage)
         X = self.dataset.drop(columns=self.target)
         y = self.dataset[self.target]
         X_train, X_test, y_train, y_test = train_test_split(
