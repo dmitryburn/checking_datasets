@@ -4,21 +4,53 @@ from sklearn.metrics import (f1_score, precision_score, recall_score,
                              jaccard_score)
 from sklearn.base import BaseEstimator
 import numpy as np
+from typing import List, Optional, Dict, Union
 
 class ModelEvaluator(BaseEstimator):
-    def __init__(self, model_trainer, metrics=None, f1_average='macro', base_multitarget=False):
+    """
+    Класс для оценки модели на основе выбранных метрик.
+
+    Параметры:
+    - model_trainer: Объект модели, который реализует метод fit и predict.
+    - metrics: Список метрик для оценки модели. Поддерживаемые метрики: 'accuracy', 'precision', 'recall', 'f1_macro', 'f1_micro', 'f1_weighted', 'f1_samples', 'hamming_loss', 'jaccard_score', 'roc_auc'.
+    - f1_average: Параметр для усреднения F1-метрики. Может быть 'macro', 'micro', 'weighted'.
+    - base_multitarget: Флаг, указывающий, нужно ли учитывать многоцелевое прогнозирование.
+    """
+    
+    def __init__(self, model_trainer, metrics: Optional[List[str]] = None, f1_average: str = 'macro', base_multitarget: bool = False):
+        """
+        Инициализирует объект ModelEvaluator.
+
+        :param model_trainer: Объект модели, реализующий методы fit и predict.
+        :param metrics: Список метрик для оценки.
+        :param f1_average: Метод усреднения для F1-метрики ('macro', 'micro', 'weighted').
+        :param base_multitarget: Флаг для поддержки многоцелевого прогнозирования.
+        """
         self.model_trainer = model_trainer
         self.metrics = metrics or []
         self.f1_average = f1_average
         self.base_multitarget = base_multitarget
 
-    def fit(self, X_train, y_train):
+    def fit(self, X_train: pd.DataFrame, y_train: pd.DataFrame) -> 'ModelEvaluator':
+        """
+        Обучает модель на предоставленных данных.
+
+        :param X_train: Признаки для обучения.
+        :param y_train: Целевые переменные для обучения.
+        :return: Self
+        """
         self.model_trainer.fit(X_train, y_train)
         return self
 
-    def evaluate(self, X_test, y_test):
+    def evaluate(self, X_test: pd.DataFrame, y_test: pd.DataFrame) -> Dict[str, float]:
+        """
+        Оценивает модель на тестовом наборе данных по указанным метрикам.
+
+        :param X_test: Признаки для тестирования.
+        :param y_test: Целевые переменные для тестирования.
+        :return: Словарь с результатами метрик.
+        """
         is_multioutput = len(y_test.shape) > 1 and y_test.shape[1] > 1
-        
         
         if is_multioutput:
             multitarget_col_names = y_test.columns
@@ -48,8 +80,6 @@ class ModelEvaluator(BaseEstimator):
 
                 for metric in row_metrics:
                     metrics_results.at[i, metric] = row_metrics[metric]
-                
-
         else:
             if 'accuracy' in self.metrics:
                 if is_multioutput:
@@ -88,10 +118,17 @@ class ModelEvaluator(BaseEstimator):
 
         return metrics_results
 
-    def evaluate_to_dataframe(self, X_test, y_test):
+    def evaluate_to_dataframe(self, X_test: pd.DataFrame, y_test: pd.DataFrame) -> pd.DataFrame:
+        """
+        Оценивает модель и возвращает результаты в формате pandas DataFrame.
+
+        :param X_test: Признаки для тестирования.
+        :param y_test: Целевые переменные для тестирования.
+        :return: pandas DataFrame с результатами оценки.
+        """
         results = self.evaluate(X_test, y_test)
         if self.base_multitarget and isinstance(results, pd.DataFrame):
             return results
         else:
             df_results = pd.DataFrame(list(results.items()), columns=['Metric', 'Score'])
-            return df_results
+            return df_results     

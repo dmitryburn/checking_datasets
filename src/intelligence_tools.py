@@ -6,76 +6,145 @@ from scipy.stats import chi2_contingency
 import numpy as np
 from sklearn.linear_model import LogisticRegression
 from sklearn.preprocessing import StandardScaler
-from sklearn.metrics import accuracy_score, classification_report
+from typing import List, Optional, Tuple, Dict
 
 
 class AnalyzeVariables:
-    def __init__(self,df:pd.DataFrame):
+    """
+    Класс для анализа переменных в наборе данных.
+
+    Параметры:
+    - df: Набор данных в формате pandas DataFrame.
+    """
+
+    def __init__(self, df: pd.DataFrame):
+        """
+        Инициализирует класс AnalyzeVariables.
+
+        :param df: Набор данных (pandas DataFrame).
+        """
         self.df = df
-   
-    def info(self):
+
+    def info(self) -> None:
+        """
+        Выводит информацию о наборе данных.
+        """
         return self.df.info()
-    
-    def shape(self):
+
+    def shape(self) -> str:
+        """
+        Возвращает строку с информацией о размере набора данных.
+
+        :return: Строка с количеством строк и колонок.
+        """
         return f'{self.df.shape[0]} - строк и {self.df.shape[1]} колонок с переменными в датасете'
-    
-    def basic_statistics(self,columns=None):
+
+    def basic_statistics(self, columns: Optional[List[str]] = None) -> pd.DataFrame:
+        """
+        Возвращает основные статистические характеристики для указанных столбцов.
+
+        :param columns: Список имен столбцов. Если None, возвращаются статистики для всех столбцов.
+        :return: pandas DataFrame с основными статистиками.
+        """
         if columns:
             return self.df[columns].describe()
         else:
             return self.df.describe()
-        
-    def categorical_hist(self,cat_cols=None,bins=20):
-        cat_cols = [col for col in self.df.columns if self.df[col].dtype in ['object', 'category']]
-        return self.df[cat_cols].hist()
-    
-    def missing_percentage(self,columns:list=None):
+
+    def categorical_hist(self, cat_cols: Optional[List[str]] = None, bins: int = 20) -> None:
+        """
+        Строит гистограммы для категориальных столбцов.
+
+        :param cat_cols: Список категориальных столбцов. Если None, выбираются все категориальные столбцы.
+        :param bins: Количество бинов для гистограмм.
+        """
+        cat_cols = cat_cols or [col for col in self.df.columns if self.df[col].dtype in ['object', 'category']]
+        return self.df[cat_cols].hist(bins=bins)
+
+    def missing_percentage(self, columns: Optional[List[str]] = None) -> pd.Series:
+        """
+        Возвращает процент пропущенных значений для указанных столбцов.
+
+        :param columns: Список имен столбцов. Если None, возвращаются пропуски для всех столбцов.
+        :return: pandas Series с процентом пропущенных значений.
+        """
         if columns:
-            return 100 * self.df[columns].isna().sum()/self.df.shape[0]
+            return 100 * self.df[columns].isna().sum() / self.df.shape[0]
         else:
-            return 100 * self.df.isna().sum()/self.df.shape[0] 
-        
-    def missing_heatmap(self,columns:list=None):
-        def plot_func(df):
-            plt.figure(figsize=(30, 10))  
+            return 100 * self.df.isna().sum() / self.df.shape[0]
+
+    def missing_heatmap(self, columns: Optional[List[str]] = None) -> None:
+        """
+        Строит тепловую карту пропущенных значений.
+
+        :param columns: Список столбцов для отображения. Если None, отображаются все столбцы.
+        """
+        def plot_func(df: pd.DataFrame) -> None:
+            plt.figure(figsize=(30, 10))
             sns.heatmap(df.isnull(), cbar=False, cmap='viridis')
             plt.title('Тепловая карта пропущенных значений')
             plt.xlabel('Столбцы')
             plt.ylabel('Строки')
             plt.show()
 
-        if columns and (len(columns) > 20) or len(self.df.columns) > 20 :
-            raise ValueError('Too many columns (max 20). Bad visual. You can use missing_percentage() function as alternative')
+        if columns and (len(columns) > 20 or len(self.df.columns) > 20):
+            raise ValueError('Слишком много столбцов (макс 20). Плохая визуализация. Используйте функцию missing_percentage() как альтернативу.')
         
         if columns:
             return plot_func(self.df[columns])
         else:
             return plot_func(self.df)
-        
-    def _get_num_cols(self) -> list:
+
+    def _get_num_cols(self) -> List[str]:
+        """
+        Возвращает список числовых столбцов в наборе данных.
+
+        :return: Список имен числовых столбцов.
+        """
         return [col for col in self.df.columns if self.df[col].dtype not in ['object', 'category']]
 
-    def _get_cat_cols(self) -> list:
+    def _get_cat_cols(self) -> List[str]:
+        """
+        Возвращает список категориальных столбцов в наборе данных.
+
+        :return: Список имен категориальных столбцов.
+        """
         return [col for col in self.df.columns if self.df[col].dtype in ['object', 'category']]
 
-    def corr_matrix(self,columns=None):
+    def corr_matrix(self, columns: Optional[List[str]] = None) -> pd.DataFrame:
+        """
+        Возвращает корреляционную матрицу для указанных числовых столбцов.
+
+        :param columns: Список имен числовых столбцов. Если None, возвращается корреляционная матрица для всех числовых столбцов.
+        :return: pandas DataFrame с корреляционной матрицей.
+        """
         num_cols = self._get_num_cols()
-        if columns and (columns not in num_cols):
-            raise ValueError('You passed columns that is not numeric')
+        if columns and any(col not in num_cols for col in columns):
+            raise ValueError('Вы указали столбцы, которые не являются числовыми.')
                     
         if columns:
             return self.df[columns].corr()
         else:
             return self.df[num_cols].corr()
-    
-    def corr_heatmap(self,columns=None):
-        plt.figure(figsize=(8, 6))  
+
+    def corr_heatmap(self, columns: Optional[List[str]] = None) -> None:
+        """
+        Строит тепловую карту корреляций.
+
+        :param columns: Список имен числовых столбцов для отображения. Если None, отображается корреляция для всех числовых столбцов.
+        """
+        plt.figure(figsize=(8, 6))
         sns.heatmap(self.corr_matrix(columns), annot=True, cmap="coolwarm", fmt='.2f', linewidths=0.5)
         plt.title("Корреляционная тепловая карта")
         plt.show()
 
-    
-    def feature_imortance(self,target):
+    def feature_importance(self, target: List[str]) -> Tuple[pd.DataFrame, pd.DataFrame]:
+        """
+        Оценивает важность признаков для целевых переменных с помощью логистической регрессии и критерия Крамера.
+
+        :param target: Список целевых переменных.
+        :return: Кортеж из двух DataFrame: важность категориальных признаков и важность числовых признаков.
+        """
         cat_cols = [col for col in self._get_cat_cols() if col not in target]
         num_cols = [col for col in self._get_num_cols() if col not in target]
 
@@ -85,33 +154,42 @@ class AnalyzeVariables:
         scaler = StandardScaler()
         X_num_scaled = scaler.fit_transform(X_num)
 
-        def cramers_v(x, y):
+        def cramers_v(x: pd.Series, y: pd.Series) -> float:
+            """
+            Вычисляет значение критерия Крамера для двух категориальных переменных.
+
+            :param x: Первая категориальная переменная.
+            :param y: Вторая категориальная переменная.
+            :return: Значение критерия Крамера.
+            """
             confusion_matrix = pd.crosstab(x, y)
             chi2 = chi2_contingency(confusion_matrix)[0]
             n = confusion_matrix.sum().sum()
             r, k = confusion_matrix.shape
             return np.sqrt(chi2 / (n * (min(r, k) - 1)))
-        
+
         cramers_v_value = []
         reg_coefs = []
         for t in target:
             model = LogisticRegression(multi_class='multinomial', solver='lbfgs', max_iter=1000)
-            model.fit(X_num_scaled, self.df[target])
+            model.fit(X_num_scaled, self.df[t])
             reg_coefs.append(model.coef_[0])
 
-            temp = []
-            for col in cat_cols:
-                temp.append(cramers_v(self.df[col],self.df[t]))
-
+            temp = [cramers_v(self.df[col], self.df[t]) for col in cat_cols]
             cramers_v_value.append(temp)
-        
-        categorical_importance = pd.DataFrame(cramers_v_value,columns=cat_cols,index=target)
-        numeric_importance = pd.DataFrame(reg_coefs,columns=num_cols,index=target)
 
+        categorical_importance = pd.DataFrame(cramers_v_value, columns=cat_cols, index=target)
+        numeric_importance = pd.DataFrame(reg_coefs, columns=num_cols, index=target)
 
-        return categorical_importance,numeric_importance
-    
-    def detect_outliers(self, columns=None):
+        return categorical_importance, numeric_importance
+
+    def detect_outliers(self, columns: Optional[List[str]] = None) -> Dict[str, int]:
+        """
+        Обнаруживает выбросы в указанных числовых столбцах.
+
+        :param columns: Список числовых столбцов для проверки на выбросы. Если None, проверяются все числовые столбцы.
+        :return: Словарь, где ключи - имена столбцов, значения - количество выбросов в каждом столбце.
+        """
         if not columns:
             columns = self._get_num_cols()
 
@@ -123,7 +201,7 @@ class AnalyzeVariables:
             IQR = Q3 - Q1
             outlier_condition = (self.df[col] < (Q1 - 1.5 * IQR)) | (self.df[col] > (Q3 + 1.5 * IQR))
             if outlier_condition.any(): 
-                 outlier_counts[col] = outlier_condition.sum()
+                outlier_counts[col] = outlier_condition.sum()
 
         return outlier_counts
 
