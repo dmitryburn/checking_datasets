@@ -21,7 +21,9 @@ class AnalyzeVariables:
         """
         Инициализирует класс AnalyzeVariables.
 
-        :param df: Набор данных (pandas DataFrame).
+        :param 
+        df: Набор данных (pandas DataFrame).
+        target: Целевые колонки
         """
         self.df = df
 
@@ -204,36 +206,87 @@ class AnalyzeVariables:
                 outlier_counts[col] = outlier_condition.sum()
 
         return outlier_counts
-
-
-
-        
-
-        
-        
-        
-                
-
-        
-
-
-
-        
     
+    def frequency_distribution(self,column:str) -> pd.DataFrame:
+        """
+        Вычисляет частотное распределение значений в указанной колонке DataFrame.
 
-        
-        
+        Args:
+            column (str): Имя колонки, для которой нужно вычислить частотное распределение.
 
+        Returns:
+            pd.DataFrame: DataFrame с частотным распределением.
+                - Индекс: Уникальные значения в колонке.
+                - 'counts': Количество вхождений каждого значения.
+                - 'percentage_of_counts': Процентное соотношение вхождений каждого значения.
+        """
 
+        print(f'Частотное рапредедение переменной : {column}')
+        val_counts = self.df[column].value_counts()
+
+        df_counts = pd.DataFrame()
+
+        df_counts['counts'] = val_counts.values
+        df_counts['percentage_of_counts'] = np.round(100 * val_counts.values/np.sum(val_counts.values))
+        df_counts.index = val_counts.index
+
+        print(f'всего в колонке {column} имеется {len(val_counts.index)} уникальных занчений')
+        return df_counts
     
-        
-        
+    def get_column_type(self, column_name:str):
+        """
+        Определяет тип данных в столбце DataFrame.
 
+        Args:
+            column_name (str): Имя колонки.
 
+        Returns:
+            str: Тип данных в колонке.
+        """
+
+        column_data = self.df[column_name]
+
+        if pd.api.types.is_numeric_dtype(column_data):
+            if pd.api.types.is_integer_dtype(column_data):
+                return 'integer'
+            else:
+                return 'float'
+        elif pd.api.types.is_datetime64_dtype(column_data):
+            return 'datetime'
+        elif pd.api.types.is_object_dtype(column_data):
+            return 'object'
+        elif pd.api.types.is_bool_dtype(column_data):
+            return 'bool'
+        else:
+            return 'unknown'
     
+    def change_column_type(self, column:str, target_type):
+        """
+        Преобразует тип колонки в DataFrame.
 
+        Args:
+            column (str): Имя колонки для преобразования.
+            target_type (str): Целевой тип данных. Допустимые значения:
+                'int': integer
+                'float': float
+                'str': string
+                'datetime': datetime
+                'bool': boolean
 
+        Returns:
+            DataFrameModifier: Объект класса DataFrameModifier с измененным типом колонки.
+        """
+        if target_type == 'int':
+            self.df[column] = pd.to_numeric(self.df[column], errors='coerce').astype(int)
+        elif target_type == 'float':
+            self.df[column] = pd.to_numeric(self.df[column], errors='coerce').astype(float)
+        elif target_type == 'str':
+            self.df[column] = self.df[column].astype(str)
+        elif target_type == 'datetime':
+            self.df[column] = pd.to_datetime(self.df[column], errors='coerce')
+        elif target_type == 'bool':
+            self.df[column] = self.df[column].astype(bool)
+        else:
+            raise ValueError(f'Некорректный тип данных: {target_type}. Допустимые значения: int, float, str, datetime, bool')
 
-
-    
-    
+        return self
